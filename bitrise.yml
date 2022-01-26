@@ -9,15 +9,13 @@ app:
     - APP_PATH: $APP_PATH
     - TEST_PATH: $TEST_PATH
     # If you want to share this step into a StepLib
-    - BITRISE_STEP_ID: browserstack-espresso-app-automate
-    - BITRISE_STEP_VERSION: "0.1.0"
-    - BITRISE_STEP_GIT_CLONE_URL: https://github.com/fernanthonies/bitrise-step-browserstack-espresso-app-automate.git
-    - MY_STEPLIB_REPO_FORK_GIT_URL: https://github.com/fernanthonies/bitrise-steplib
+    - BITRISE_STEP_ID: browserstack-app-automate
+    - BITRISE_STEP_VERSION: "0.0.1"
+    - BITRISE_STEP_GIT_CLONE_URL: https://github.com/gaborTachtler/bitrise-step-browserstack-app-automate.git
+    - MY_STEPLIB_REPO_FORK_GIT_URL: https://github.com/gaborTachtler/bitrise-steplib
 
 workflows:
   test:
-    before_run:
-      - audit-this-step
     steps:
       - script:
           inputs:
@@ -49,6 +47,7 @@ workflows:
             - app_apk_path: $APP_PATH
             - test_apk_path: $TEST_PATH
             - browserstack_device_list: "\"Google Pixel-7.1\", \"Google Pixel-8.0\""
+            - browserstack_screenshot: true
             - browserstack_video: true
             - browserstack_local: false
             - browserstack_gps_location: "40.730610,-73.935242"
