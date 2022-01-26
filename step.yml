@@ -37,8 +37,16 @@ run_if: ""
 deps:
   brew:
     - name: curl
+    - name: git
+    - name: wget
   apt_get:
     - name: curl
+    - name: git
+    - name: wget
+
+toolkit:
+  bash:
+    entry_file: step.sh
 
 inputs:
   - app_apk_path: $BITRISE_APK_PATH
