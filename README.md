@@ -1,2 +1,2 @@
 # bitrise-step-browserstack-app-automate
-A Bitrise step for uploading an Espresso Test to BrowserStack's App Automate
+This step uploads a provided app apk and test apk to browserstack. It then will execute the Espresso Tests for the provided apks in BrowserStacks app automate.
