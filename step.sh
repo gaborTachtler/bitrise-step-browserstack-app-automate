@@ -47,5 +47,7 @@ until [[ "$(getBuildStatus)" != "running" ]]; do
 done
 echo "---Automation $(getBuildStatus)!---"
 
-echo "---Save report"
+echo "---Wait for report---"
+sleep 10s
+echo "---Save report---"
 curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id/report" > $BITRISE_DEPLOY_DIR/report.xml
