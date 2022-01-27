@@ -39,3 +39,15 @@ get_build_status_response="$(curl -u "$browserstack_username":"$browserstack_acc
 build_status=$(echo "$get_build_status_response" | jq .status)
 echo "build id: $build_id"
 echo "build status: $build_status"
+
+until [ "$build_status" = "running" ];
+do
+  echo "Automation is running......"
+  sleep 30s
+  if [ "$build_status" = "passed" ]; then
+    echo "Automation Passed!"
+  fi
+  if [ "$build_status" = "failed" ]; then
+    echo "Automation Failed!"
+  fi
+done
