@@ -40,13 +40,13 @@ function getBuildStatus() {
 
 echo "---Monitor build state---"
 echo "Current state: $(getBuildStatus)"
-until [ "$(getBuildStatus)" = "running" ]; do
+until [[ "$(getBuildStatus)" != "running" ]]; do
   echo "Automation is running......"
   sleep 30s
-  if [ "$(getBuildStatus)" = "passed" ]; then
+  if [[ "$(getBuildStatus)" == "passed" ]]; then
     echo "Automation Passed!"
   fi
-  if [ "$(getBuildStatus)" = "failed" ]; then
+  if [[ "$(getBuildStatus)" == "failed" ]]; then
     echo "Automation Failed!"
   fi
 done
