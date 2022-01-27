@@ -1,16 +1,16 @@
 #!/bin/bash
-set -ex
-echo "uploading app apk to browserstack"
+set -e
+echo "Uploading app apk to browserstack"
 # shellcheck disable=SC2154
 upload_app_response="$(curl -u "$browserstack_username":"$browserstack_access_key" -X POST https://api-cloud.browserstack.com/app-automate/upload -F file=@"$app_apk_path")"
 app_url=$(echo "$upload_app_response" | jq .app_url)
 
-echo "uploading test apk to browserstack"
+echo "Uploading test apk to browserstack"
 # shellcheck disable=SC2154
 upload_test_response="$(curl -u "$browserstack_username":"$browserstack_access_key" -X POST https://api-cloud.browserstack.com/app-automate/espresso/test-suite -F file=@"$test_apk_path")"
 test_url=$(echo "$upload_test_response" | jq .test_url)
 
-echo "starting automated tests"
+echo "Starting automated tests"
 # shellcheck disable=SC2154
 json=$( jq -n \
                 --argjson app_url "$app_url" \
@@ -38,20 +38,16 @@ function getBuildStatus() {
     return "$(curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .status)"
 }
 
-echo "Monitor build state"
-echo getBuildStatus
-
-echo "build id: $build_id"
-echo "build status: " getBuildStatus
-
-until [ "$(getBuildStatus)" = "running" ];
+echo "---Monitor build state---"
+echo "Current state: $(getBuildStatus)"
+until [ "$(getBuildStatus)" = '"running"' ];
 do
   echo "Automation is running......"
   sleep 30s
-  if [ "$(getBuildStatus)" = "passed" ]; then
+  if [ "$(getBuildStatus)" = '"passed"' ]; then
     echo "Automation Passed!"
   fi
-  if [ "$(getBuildStatus)" = "failed" ]; then
+  if [ "$(getBuildStatus)" = '"failed"' ]; then
     echo "Automation Failed!"
   fi
 done
