@@ -34,20 +34,24 @@ run_test_response="$(curl -X POST https://api-cloud.browserstack.com/app-automat
 build_id=$(echo "$run_test_response" | jq .build_id | sed 's/"//g')
 envman add --key BROWSERSTACK_BUILD_ID --value "$build_id"
 
-echo "monitor build state"
-get_build_status_response="$(curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id")"
-build_status=$(echo "$get_build_status_response" | jq .status)
-echo "build id: $build_id"
-echo "build status: $build_status"
+function getBuildStatus() {
+    return "$(curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .status)"
+}
 
-until [ "$build_status" = "running" ];
+echo "Monitor build state"
+echo getBuildStatus
+
+echo "build id: $build_id"
+echo "build status: " getBuildStatus
+
+until [ "$(getBuildStatus)" = "running" ];
 do
   echo "Automation is running......"
   sleep 30s
-  if [ "$build_status" = "passed" ]; then
+  if [ "$(getBuildStatus)" = "passed" ]; then
     echo "Automation Passed!"
   fi
-  if [ "$build_status" = "failed" ]; then
+  if [ "$(getBuildStatus)" = "failed" ]; then
     echo "Automation Failed!"
   fi
 done
