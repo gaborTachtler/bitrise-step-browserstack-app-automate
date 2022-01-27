@@ -32,7 +32,9 @@ json=$(jq -n \
 
 run_test_response="$(curl -X POST https://api-cloud.browserstack.com/app-automate/espresso/build -d \ "$json" -H "Content-Type: application/json" -u "$browserstack_username:$browserstack_access_key")"
 build_id=$(echo "$run_test_response" | jq .build_id | sed 's/"//g')
+session_id=$(curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq '.devices[].sessions[].id' | sed 's/"//g')
 envman add --key BROWSERSTACK_BUILD_ID --value "$build_id"
+envman add --key BROWSERSTACK_SESSION_ID --value "$session_id"
 
 function getBuildStatus() {
   curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .status | sed 's/"//g'
@@ -44,3 +46,6 @@ until [[ "$(getBuildStatus)" != "running" ]]; do
   sleep 60s
 done
 echo "---Automation $(getBuildStatus)!---"
+
+report=$(curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id/report")
+envman add --key BROWSERSTACK_REPORT --value "$report"
