@@ -12,42 +12,41 @@ test_url=$(echo "$upload_test_response" | jq .test_url)
 
 echo "Starting automated tests"
 # shellcheck disable=SC2154
-json=$( jq -n \
-                --argjson app_url "$app_url" \
-                --argjson test_url "$test_url" \
-                --argjson devices ["$browserstack_device_list"] \
-                --argjson class ["$browserstack_class"] \
-                --argjson package ["$browserstack_package"] \
-                --argjson annotation ["$browserstack_annotation"] \
-                --arg size "$browserstack_size" \
-                --arg logs "$browserstack_device_logs" \
-                --arg video "$browserstack_video" \
-                --arg screenshot "$browserstack_screenshot" \
-                --arg loc "$browserstack_local" \
-                --arg locId "$browserstack_local_identifier" \
-                --arg gpsLocation "$browserstack_gps_location" \
-                --arg language "$browserstack_language" \
-                --arg locale "$browserstack_locale" \
-                '{app: $app_url, testSuite: $test_url, devices: $devices, class: $class, package: $package, annotation: $annotation, size: $size, logs: $logs, video: $video, enableSpoonFramework: $screenshot, local: $loc, localIdentifier: $locId, gpsLocation: $gpsLocation, language: $language, locale: $locale}')
+json=$(jq -n \
+  --argjson app_url "$app_url" \
+  --argjson test_url "$test_url" \
+  --argjson devices ["$browserstack_device_list"] \
+  --argjson class ["$browserstack_class"] \
+  --argjson package ["$browserstack_package"] \
+  --argjson annotation ["$browserstack_annotation"] \
+  --arg size "$browserstack_size" \
+  --arg logs "$browserstack_device_logs" \
+  --arg video "$browserstack_video" \
+  --arg screenshot "$browserstack_screenshot" \
+  --arg loc "$browserstack_local" \
+  --arg locId "$browserstack_local_identifier" \
+  --arg gpsLocation "$browserstack_gps_location" \
+  --arg language "$browserstack_language" \
+  --arg locale "$browserstack_locale" \
+  '{app: $app_url, testSuite: $test_url, devices: $devices, class: $class, package: $package, annotation: $annotation, size: $size, logs: $logs, video: $video, enableSpoonFramework: $screenshot, local: $loc, localIdentifier: $locId, gpsLocation: $gpsLocation, language: $language, locale: $locale}')
 
 run_test_response="$(curl -X POST https://api-cloud.browserstack.com/app-automate/espresso/build -d \ "$json" -H "Content-Type: application/json" -u "$browserstack_username:$browserstack_access_key")"
 build_id=$(echo "$run_test_response" | jq .build_id | sed 's/"//g')
 envman add --key BROWSERSTACK_BUILD_ID --value "$build_id"
 
 function getBuildStatus() {
-    return "$(curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .status)"
+  curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .status | sed 's/"//g'
 }
 
 echo "---Monitor build state---"
 echo "Current state: $(getBuildStatus)"
-until [ "$(getBuildStatus)" = '"running"' ];
-do
+until [ "$(getBuildStatus)" = "running" ]; do
   echo "Automation is running......"
   sleep 30s
-  if [ "$(getBuildStatus)" = '"passed"' ]; then
+  if [ "$(getBuildStatus)" = "passed" ]; then
     echo "Automation Passed!"
   fi
-  if [ "$(getBuildStatus)" = '"failed"' ]; then
+  if [ "$(getBuildStatus)" = "failed" ]; then
     echo "Automation Failed!"
   fi
 done
