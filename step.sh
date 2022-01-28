@@ -48,8 +48,12 @@ done
 echo "---Automation $(getBuildStatus)!---"
 
 echo "---Wait for report---"
+echo "Build id: $build_id"
+echo "Session id: $session_id"
 sleep 60s
-echo "$build_id"
-echo "$session_id"
+
 echo "---Save report---"
 curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id/report" > $BITRISE_DEPLOY_DIR/report.xml
+
+echo "---Save video---"
+curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://www.browserstack.com/s3-upload/bs-video-logs-usw/s3-us-west-1/$session_id/video-$session_id.mp4" > $BITRISE_DEPLOY_DIR/report.xml
