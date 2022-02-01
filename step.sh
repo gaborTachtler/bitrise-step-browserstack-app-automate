@@ -20,7 +20,7 @@ json=$(jq -n \
   --argjson package ["$browserstack_package"] \
   --argjson annotation ["$browserstack_annotation"] \
   --arg size "$browserstack_size" \
-  --arg logs "$browserstack_device_logs" \
+  --arg logs "$browserstack_logs" \
   --arg video "$browserstack_video" \
   --arg screenshot "$browserstack_screenshot" \
   --arg loc "$browserstack_local" \
@@ -28,7 +28,7 @@ json=$(jq -n \
   --arg gpsLocation "$browserstack_gps_location" \
   --arg language "$browserstack_language" \
   --arg locale "$browserstack_locale" \
-  '{app: $app_url, testSuite: $test_url, devices: $devices, class: $class, package: $package, annotation: $annotation, size: $size, logs: $logs, video: $video, enableSpoonFramework: $screenshot, local: $loc, localIdentifier: $locId, gpsLocation: $gpsLocation, language: $language, locale: $locale}')
+  '{app: $app_url, testSuite: $test_url, devices: $devices, class: $class, package: $package, annotation: $annotation, size: $size, deviceLogs: $logs, networkLogs: $logs, video: $video, enableSpoonFramework: $screenshot, local: $loc, localIdentifier: $locId, gpsLocation: $gpsLocation, language: $language, locale: $locale}')
 
 run_test_response="$(curl -X POST https://api-cloud.browserstack.com/app-automate/espresso/build -d \ "$json" -H "Content-Type: application/json" -u "$browserstack_username:$browserstack_access_key")"
 build_id=$(echo "$run_test_response" | jq .build_id | sed 's/"//g')
@@ -48,8 +48,12 @@ done
 echo "---Automation $(getBuildStatus)!---"
 
 echo "---Wait for report---"
+echo "Build id: $build_id"
+echo "Session id: $session_id"
 sleep 60s
-echo "$build_id"
-echo "$session_id"
+
 echo "---Save report---"
 curl -u "$browserstack_username":"$browserstack_access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id/report" > $BITRISE_DEPLOY_DIR/report.xml
+
+echo "---Save video---"
+curl -o $BITRISE_DEPLOY_DIR/video.mp4 "https://www.browserstack.com/s3-upload/bs-video-logs-use/s3/$session_id/video-$session_id.mp4"
