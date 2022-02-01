@@ -20,7 +20,7 @@ json=$(jq -n \
   --argjson package ["$browserstack_package"] \
   --argjson annotation ["$browserstack_annotation"] \
   --arg size "$browserstack_size" \
-  --arg logs "$browserstack_device_logs" \
+  --arg logs "$browserstack_logs" \
   --arg video "$browserstack_video" \
   --arg screenshot "$browserstack_screenshot" \
   --arg loc "$browserstack_local" \

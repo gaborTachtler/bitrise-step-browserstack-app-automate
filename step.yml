@@ -119,12 +119,12 @@ inputs:
         Set this parameter if you want to run tests that have @SmallTest, @MediumTest and @LargeTest annotations.
       description: Set this parameter if you want to run tests that have @SmallTest, @MediumTest and @LargeTest annotations.
       is_required: false
-  - browserstack_device_logs: "true"
+  - browserstack_logs: "true"
     opts:
-      title: Device Logs
+      title: Logs
       category: Automated Test Options
-      summary: Set this parameter if you want to enable the device logs
-      description: Set this parameter if you want to enable the device logs
+      summary: Set this parameter if you want to enable the logs
+      description: Set this parameter if you want to enable the logs
       is_required: false
       value_options:
         - "true"
