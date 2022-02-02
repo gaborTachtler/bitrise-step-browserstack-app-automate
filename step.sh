@@ -10,7 +10,7 @@ echo "App URL: $app_url"
 
 echo "Uploading test apk to browserstack"
 # shellcheck disable=SC2154
-upload_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/test-suite" -F "file=@$test_apk_path")"
+upload_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" -F "file=@$test_apk_path")"
 test_url=$(echo "$upload_test_response" | jq .test_url)
 echo "$upload_test_response"
 echo "Test URL: $test_url"
