@@ -5,11 +5,13 @@ echo "Uploading app apk to browserstack"
 # shellcheck disable=SC2154
 upload_app_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" -F "file=@$app_apk_path")"
 app_url=$(echo "$upload_app_response" | jq .app_url)
+echo "App URL: $app_url"
 
 echo "Uploading test apk to browserstack"
 # shellcheck disable=SC2154
 upload_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" -F "file=@$test_apk_path")"
 test_url=$(echo "$upload_test_response" | jq .test_url)
+echo "Test URL: $test_url"
 
 echo "Starting automated tests"
 # shellcheck disable=SC2154
@@ -31,7 +33,7 @@ json=$(jq -n \
   --arg locale "$bs_locale" \
   '{app: $app_url, testSuite: $test_url, devices: $devices, class: $class, package: $package, annotation: $annotation, size: $size, deviceLogs: $logs, networkLogs: $logs, video: $video, enableSpoonFramework: $screenshot, local: $loc, localIdentifier: $locId, gpsLocation: $gpsLocation, language: $language, locale: $locale}')
 
-run_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" -d \ "$json" -H "Content-Type: application/json")"
+run_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/build" -d \ "$json" -H "Content-Type: application/json")"
 build_id=$(echo "$run_test_response" | jq .build_id | sed 's/"//g')
 echo "Build id: $build_id"
 
