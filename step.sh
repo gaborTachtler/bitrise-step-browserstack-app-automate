@@ -1,19 +1,19 @@
 #!/bin/bash
 set -e
 
-echo "Uploading app apk to browserstack"
+printf "\n---Uploading app apk to browserstack---\n"
 # shellcheck disable=SC2154
 upload_app_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" -F "file=@$app_apk_path")"
 app_url=$(echo "$upload_app_response" | jq .app_url)
-echo "App URL: $app_url"
+printf "\n---App uploading done---\n"
 
-echo "Uploading test apk to browserstack"
+printf "\n---Uploading test apk to browserstack---\n"
 # shellcheck disable=SC2154
 upload_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" -F "file=@$test_apk_path")"
 test_url=$(echo "$upload_test_response" | jq .test_suite_url)
-echo "Test URL: $test_url"
+printf "\n---Test uploading done---\n"
 
-echo "---Starting automated tests---"
+printf "\n---Starting automated tests---\n"
 # shellcheck disable=SC2154
 json=$(jq -n \
   --argjson app_url "$app_url" \
@@ -33,25 +33,23 @@ json=$(jq -n \
   --arg locale "$bs_locale" \
   '{app: $app_url, testSuite: $test_url, devices: $devices, class: $class, package: $package, annotation: $annotation, size: $size, deviceLogs: $logs, networkLogs: $logs, video: $video, enableSpoonFramework: $screenshot, local: $loc, localIdentifier: $locId, gpsLocation: $gpsLocation, language: $language, locale: $locale}')
 
-run_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" -d "$json" -H "Content-Type: application/json")"
+run_test_response="$(curl -s -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" -d "$json" -H "Content-Type: application/json")"
 build_id=$(echo "$run_test_response" | jq .build_id | sed 's/"//g')
-echo "Run response: $run_test_response"
-echo "Build id: $build_id"
 
 function getBuildStatus() {
-  curl -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .status | sed 's/"//g'
+  curl -s -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .status | sed 's/"//g'
 }
 
 function getSessionStatus() {
-  curl -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .devices[].sessions[].status | sed 's/"//g'
+  curl -s -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .devices[].sessions[].status | sed 's/"//g'
 }
 
 while [[ "$(getSessionStatus)" != "running" ]]; do
-  echo "Waiting for session ID......"
+  printf "Waiting for session ID...\n"
   sleep 5s
 done
 
-session_id="$(curl -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .devices[].sessions[].id | sed 's/"//g')"
+session_id="$(curl -s -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .devices[].sessions[].id | sed 's/"//g')"
 
 echo "Build id: $build_id"
 echo "Session id: $session_id"
@@ -59,31 +57,31 @@ envman add --key BROWSERSTACK_BUILD_ID --value "$build_id"
 envman add --key BROWSERSTACK_SESSION_ID --value "$session_id"
 
 function getSessionResponse() {
-  curl -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id"
+  curl -s -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id"
 }
 
-echo "---Monitor build state---"
+printf "---Monitor build state---\n"
 while [[ "$(getBuildStatus)" == "running" ]]; do
-  echo "Automation is running......"
+  echo "Automation is running..."
   sleep 60s
 done
 
-echo "---Automation $(getBuildStatus)!---"
+printf "\n---Automation %s!---\n", "$(getBuildStatus)"
 
-echo "---Save report---"
-curl -u "$username:$access_key" -o "$BITRISE_DEPLOY_DIR/report.xml" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id/report"
+printf "\n---Save report---\n"
+curl -s -u "$username:$access_key" -o "$BITRISE_DEPLOY_DIR/report.xml" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id/report"
 
-echo "---Save video---"
+printf "\n---Save video---\n"
 video_link="https://www.browserstack.com/s3-upload/bs-video-logs-use/s3/$session_id/video-$session_id.mp4"
-curl -o "$BITRISE_DEPLOY_DIR/video.mp4" "$video_link"
+curl -s -o "$BITRISE_DEPLOY_DIR/video.mp4" "$video_link"
 
-echo "---Save env vars---"
+printf "\n---Save env vars---\n"
 session_response=$(getSessionResponse)
-test_all=$($session_response | jq .testcases.count)
-test_failed=$($session_response | jq .testcases.status.passed)
+test_all=$(echo "$session_response" | jq .testcases.count)
+test_failed=$(echo "$session_response" | jq .testcases.status.failed)
 echo "Test all: $test_all"
 echo "Test failed: $test_failed"
-envman add --key BS_TEST_ALL --value "$build_id"
-envman add --key BS_TEST_FAILED --value "$session_id"
-envman add --key BS_VIDEO_URL --value "$video_link"
+envman add --key BS_TEST_ALL --value "$test_all"
+envman add --key BS_TEST_FAILED --value "$test_failed"
+envman add --key BS_VIDEO_URL --value "$BITRISE_DEPLOY_DIR/video.mp4"
 envman add --key BS_EXECUTION_URL --value "https://app-automate.browserstack.com/dashboard/v2/builds/$build_id"
