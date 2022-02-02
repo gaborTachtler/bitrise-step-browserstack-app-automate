@@ -31,8 +31,9 @@ json=$(jq -n \
   --arg locale "$bs_locale" \
   '{app: $app_url, testSuite: $test_url, devices: $devices, class: $class, package: $package, annotation: $annotation, size: $size, deviceLogs: $logs, networkLogs: $logs, video: $video, enableSpoonFramework: $screenshot, local: $loc, localIdentifier: $locId, gpsLocation: $gpsLocation, language: $language, locale: $locale}')
 
-run_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" -d "$json" -H "Content-Type: application/json")"
+run_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" -d \ "$json" -H "Content-Type: application/json")"
 build_id=$(echo "$run_test_response" | jq .build_id | sed 's/"//g')
+echo "Build id: $build_id"
 
 function getBuildStatus() {
   curl -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .status | sed 's/"//g'
