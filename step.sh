@@ -5,13 +5,13 @@ printf "\n---Uploading app apk to browserstack---\n"
 # shellcheck disable=SC2154
 upload_app_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/app" -F "file=@$app_apk_path")"
 app_url=$(echo "$upload_app_response" | jq .app_url)
-printf "---App uploading done---\n"
+echo "---App uploading done---"
 
 printf "\n---Uploading test apk to browserstack---\n"
 # shellcheck disable=SC2154
 upload_test_response="$(curl -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/test-suite" -F "file=@$test_apk_path")"
 test_url=$(echo "$upload_test_response" | jq .test_suite_url)
-printf "---Test uploading done---\n"
+echo "---Test uploading done---"
 
 printf "\n---Starting automated tests---\n"
 # shellcheck disable=SC2154
@@ -45,7 +45,7 @@ function getSessionStatus() {
 }
 
 while [[ "$(getSessionStatus)" != "running" ]]; do
-  printf "Waiting for session ID...\n"
+  echo "Waiting for session ID..."
   sleep 5s
 done
 
