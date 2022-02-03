@@ -60,7 +60,9 @@ getSessionResponse() {
   curl -s -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id"
 }
 
-test_all=$( (getSessionResponse) | jq .testcases.count)
+getNumberOfTests() {
+  (getSessionResponse) | jq .testcases.count
+}
 
 getTestStatus() {
   (getSessionResponse) | jq .testcases.status."$1" | sed 's/"//g'
@@ -81,29 +83,35 @@ saveLogs() {
 printf "\n---Monitor build state---\n"
 echo "Number of tests: $test_all"
 
-while [[ "$(getBuildStatus)" == "running" ]]; do
+while [[ "$(getBuildStatus)" == "running" || $(getBuildStatus) == 0 ]]; do
   echo "Automation is running..."
-  for ((i = 0; i < test_all; i++)); do
+  sleep 30s
+done
+
+test_all=$(getNumberOfTests)
+
+printf "\n---Print states and save logs---\n"
+echo "Number of tests: $test_all"
+for ((i = 0; i < test_all; i++)); do
+  test_case_data=$(getTestCaseData "$i")
+  test_status=$(echo "$test_case_data" | jq .status | sed 's/"//g')
+
+  while [[ $test_status == "queued" || $test_status == "running" ]]; do
+    sleep 5s
     test_case_data=$(getTestCaseData "$i")
     test_status=$(echo "$test_case_data" | jq .status | sed 's/"//g')
-
-    while [[ $test_status == "queued" || $test_status == "running" ]]; do
-      sleep 5s
-      test_case_data=$(getTestCaseData "$i")
-      test_status=$(echo "$test_case_data" | jq .status | sed 's/"//g')
-    done
-
-    test_name=$(echo "$test_case_data" | jq .name | sed 's/"//g')
-    test_duration=$(echo "$test_case_data" | jq .duration | sed 's/"//g')
-    padding="..............................................."
-
-    if [[ $test_duration != null ]]; then
-      saveLogs "$(getTestCaseData "$i")"
-      printf "%s%s %s\n" "$test_name" "${padding:${#test_name}}" "$test_status! ($test_duration s)"
-    else
-      printf "%s%s %s\n" "$test_name" "${padding:${#test_name}}" "$test_status!"
-    fi
   done
+
+  test_name=$(echo "$test_case_data" | jq .name | sed 's/"//g')
+  test_duration=$(echo "$test_case_data" | jq .duration | sed 's/"//g')
+  padding="..............................................."
+
+  if [[ $test_duration != null ]]; then
+    saveLogs "$(getTestCaseData "$i")"
+    printf "%s%s %s\n" "${i+1}. ${test_name}" "${padding:${#test_name}}" "$test_status! ($test_duration s)"
+  else
+    printf "%s%s %s\n" "${i+1}. ${test_name}" "${padding:${#test_name}}" "$test_status!"
+  fi
 done
 
 printf "\n---Automation %s!---\n" "$(getBuildStatus)"
