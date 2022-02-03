@@ -79,7 +79,7 @@ saveLogs() {
 }
 
 printf "\n---Monitor build state---\n"
-for ((i = 0; i < 5; i++)); do
+for ((i = 0; i < test_all; i++)); do
   test_case_data=$(getTestCaseData "$i")
   test_status=$(echo "$test_case_data" | jq .status | sed 's/"//g')
 
