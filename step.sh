@@ -79,26 +79,31 @@ saveLogs() {
 }
 
 printf "\n---Monitor build state---\n"
-for ((i = 0; i < test_all; i++)); do
-  test_case_data=$(getTestCaseData "$i")
-  test_status=$(echo "$test_case_data" | jq .status | sed 's/"//g')
+echo "Number of tests: $test_all"
 
-  while [[ $test_status == "queued" || $test_status == "running" ]]; do
-    sleep 5s
+while [[ "$(getBuildStatus)" == "running" ]]; do
+  echo "Automation is running..."
+  for ((i = 0; i < test_all; i++)); do
     test_case_data=$(getTestCaseData "$i")
     test_status=$(echo "$test_case_data" | jq .status | sed 's/"//g')
+
+    while [[ $test_status == "queued" || $test_status == "running" ]]; do
+      sleep 5s
+      test_case_data=$(getTestCaseData "$i")
+      test_status=$(echo "$test_case_data" | jq .status | sed 's/"//g')
+    done
+
+    test_name=$(echo "$test_case_data" | jq .name | sed 's/"//g')
+    test_duration=$(echo "$test_case_data" | jq .duration | sed 's/"//g')
+    padding="..............................................."
+
+    if [[ $test_duration != null ]]; then
+      saveLogs "$(getTestCaseData "$i")"
+      printf "%s%s %s\n" "$test_name" "${padding:${#test_name}}" "$test_status! ($test_duration s)"
+    else
+      printf "%s%s %s\n" "$test_name" "${padding:${#test_name}}" "$test_status!"
+    fi
   done
-
-  test_name=$(echo "$test_case_data" | jq .name | sed 's/"//g')
-  test_duration=$(echo "$test_case_data" | jq .duration | sed 's/"//g')
-  padding="..............................................."
-
-  if [[ $test_duration != null ]]; then
-    saveLogs "$(getTestCaseData "$i")"
-    printf "%s%s %s\n" "$test_name" "${padding:${#test_name}}" "$test_status! ($test_duration s)"
-  else
-    printf "%s%s %s\n" "$test_name" "${padding:${#test_name}}" "$test_status!"
-  fi
 done
 
 printf "\n---Automation %s!---\n" "$(getBuildStatus)"
