@@ -36,11 +36,11 @@ json=$(jq -n \
 run_test_response="$(curl -s -u "$username:$access_key" -X POST "https://api-cloud.browserstack.com/app-automate/espresso/v2/build" -d "$json" -H "Content-Type: application/json")"
 build_id=$(echo "$run_test_response" | jq .build_id | sed 's/"//g')
 
-function getBuildStatus() {
+getBuildStatus() {
   curl -s -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .status | sed 's/"//g'
 }
 
-function getSessionStatus() {
+getSessionStatus() {
   curl -s -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id" | jq .devices[].sessions[].status | sed 's/"//g'
 }
 
@@ -56,29 +56,61 @@ echo "Session id: $session_id"
 envman add --key BROWSERSTACK_BUILD_ID --value "$build_id"
 envman add --key BROWSERSTACK_SESSION_ID --value "$session_id"
 
-function getSessionResponse() {
+getSessionResponse() {
   curl -s -u "$username:$access_key" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id"
 }
 
+test_all=$( (getSessionResponse) | jq .testcases.count)
+
+getTestStatus() {
+  (getSessionResponse) | jq .testcases.status."$1" | sed 's/"//g'
+}
+
+getTestCaseData() {
+  (getSessionResponse) | jq .testcases.data[].testcases[$1]
+}
+
+saveLogs() {
+  local test_case_data=$*
+  local test_name=$(echo "$test_case_data" | jq .name | sed 's/"//g')
+  curl -s -u "$username:$access_key" -o "${BITRISE_DEPLOY_DIR}/${test_name}_instrumentation.log" "$(echo "$test_case_data" | jq .instrumentation_log | sed 's/"//g')"
+  curl -s -u "$username:$access_key" -o "${BITRISE_DEPLOY_DIR}/${test_name}_device.log" "$(echo "$test_case_data" | jq .device_log | sed 's/"//g')"
+  curl -s -u "$username:$access_key" -o "${BITRISE_DEPLOY_DIR}/${test_name}_network.log" "$(echo "$test_case_data" | jq .network_log | sed 's/"//g')"
+}
+
 printf "\n---Monitor build state---\n"
-while [[ "$(getBuildStatus)" == "running" ]]; do
-  echo "Automation is running..."
-  sleep 60s
+for ((i = 0; i < 5; i++)); do
+  test_case_data=$(getTestCaseData "$i")
+  test_status=$(echo "$test_case_data" | jq .status | sed 's/"//g')
+
+  while [[ $test_status == "queued" || $test_status == "running" ]]; do
+    sleep 5s
+    test_case_data=$(getTestCaseData "$i")
+    test_status=$(echo "$test_case_data" | jq .status | sed 's/"//g')
+  done
+
+  test_name=$(echo "$test_case_data" | jq .name | sed 's/"//g')
+  test_duration=$(echo "$test_case_data" | jq .duration | sed 's/"//g')
+  padding="..............................................."
+
+  if [[ $test_duration != null ]]; then
+    saveLogs "$(getTestCaseData "$i")"
+    printf "%s%s %s\n" "$test_name" "${padding:${#test_name}}" "$test_status! ($test_duration s)"
+  else
+    printf "%s%s %s\n" "$test_name" "${padding:${#test_name}}" "$test_status!"
+  fi
 done
 
-printf "\n---Automation %s!---\n", "$(getBuildStatus)"
+printf "\n---Automation %s!---\n" "$(getBuildStatus)"
 
-printf "\n---Save report---\n"
+echo "---Save report---"
 curl -s -u "$username:$access_key" -o "$BITRISE_DEPLOY_DIR/report.xml" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id/report"
 
-printf "\n---Save video---\n"
-video_link="https://www.browserstack.com/s3-upload/bs-video-logs-use/s3/$session_id/video-$session_id.mp4"
-curl -s -o "$BITRISE_DEPLOY_DIR/video.mp4" "$video_link"
+echo "---Save video---"
+curl -s -o "$BITRISE_DEPLOY_DIR/video.mp4" "https://www.browserstack.com/s3-upload/bs-video-logs-use/s3/$session_id/video-$session_id.mp4"
 
-printf "\n---Save env vars---\n"
-session_response=$(getSessionResponse)
-test_all=$(echo "$session_response" | jq .testcases.count)
-test_failed=$(echo "$session_response" | jq .testcases.status.failed)
+echo "---Save env vars---"
+test_failed=$( (getSessionResponse) | jq .testcases.status.failed)
 echo "Test all: $test_all"
 echo "Test failed: $test_failed"
 envman add --key BS_TEST_ALL --value "$test_all"
