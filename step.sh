@@ -81,16 +81,13 @@ saveLogs() {
 }
 
 printf "\n---Monitor build state---\n"
-echo "Number of tests: $test_all"
-
 while [[ "$(getBuildStatus)" == "running" || $(getBuildStatus) == 0 ]]; do
   echo "Automation is running..."
   sleep 30s
 done
 
-test_all=$(getNumberOfTests)
-
 printf "\n---Print states and save logs---\n"
+test_all=$(getNumberOfTests)
 echo "Number of tests: $test_all"
 for ((i = 0; i < test_all; i++)); do
   test_case_data=$(getTestCaseData "$i")
@@ -108,13 +105,13 @@ for ((i = 0; i < test_all; i++)); do
 
   if [[ $test_duration != null ]]; then
     saveLogs "$(getTestCaseData "$i")"
-    printf "%s%s %s\n" "${i+1}. ${test_name}" "${padding:${#test_name}}" "$test_status! ($test_duration s)"
+    printf "%s%s %s\n" "${test_name}" "${padding:${#test_name}}" "$test_status! ($test_duration s)"
   else
-    printf "%s%s %s\n" "${i+1}. ${test_name}" "${padding:${#test_name}}" "$test_status!"
+    printf "%s%s %s\n" "${test_name}" "${padding:${#test_name}}" "$test_status!"
   fi
 done
 
-printf "\n---Automation %s!---\n" "$(getBuildStatus)"
+printf "\n---Automation %s!---\n\n" "$(getBuildStatus)"
 
 echo "---Save report---"
 curl -s -u "$username:$access_key" -o "$BITRISE_DEPLOY_DIR/report.xml" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id/report"
