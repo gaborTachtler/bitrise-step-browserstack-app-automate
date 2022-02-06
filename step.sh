@@ -111,7 +111,15 @@ for ((i = 0; i < test_all; i++)); do
   fi
 done
 
-printf "\n---Automation %s!---\n\n" "$(getBuildStatus)"
+test_passed=$( (getSessionResponse) | jq .testcases.status.passed)
+test_failed=$( (getSessionResponse) | jq .testcases.status.failed)
+build_status=$(getBuildStatus)
+
+printf "\nTest all: %s\n" "$(test_all)"
+printf "Test passed: %s\n" "$(test_passed)"
+printf "Test failed: %s\n" "$(test_failed)"
+
+printf "\n---Automation %s!---\n\n" "$build_status"
 
 echo "---Save report---"
 curl -s -u "$username:$access_key" -o "$BITRISE_DEPLOY_DIR/report.xml" -X GET "https://api-cloud.browserstack.com/app-automate/espresso/v2/builds/$build_id/sessions/$session_id/report"
@@ -120,10 +128,11 @@ echo "---Save video---"
 curl -s -o "$BITRISE_DEPLOY_DIR/video.mp4" "https://www.browserstack.com/s3-upload/bs-video-logs-use/s3/$session_id/video-$session_id.mp4"
 
 echo "---Save env vars---"
-test_failed=$( (getSessionResponse) | jq .testcases.status.failed)
-echo "Test all: $test_all"
-echo "Test failed: $test_failed"
 envman add --key BS_TEST_ALL --value "$test_all"
 envman add --key BS_TEST_FAILED --value "$test_failed"
 envman add --key BS_VIDEO_URL --value "$BITRISE_DEPLOY_DIR/video.mp4"
 envman add --key BS_EXECUTION_URL --value "https://app-automate.browserstack.com/dashboard/v2/builds/$build_id"
+
+if [[ $build_status != "passed" ]]; then
+    exit 1
+fi
