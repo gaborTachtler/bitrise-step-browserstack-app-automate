@@ -115,8 +115,8 @@ test_passed=$( (getSessionResponse) | jq .testcases.status.passed)
 test_failed=$( (getSessionResponse) | jq .testcases.status.failed)
 build_status=$(getBuildStatus)
 
-printf "\nTest all: %s" "${test_all}"
-printf "Test passed: %s" "${test_passed}"
+printf "\nTest all: %s\n" "${test_all}"
+printf "Test passed: %s\n" "${test_passed}"
 printf "Test failed: %s\n" "${test_failed}"
 
 printf "\n---Automation %s!---\n\n" "$build_status"
